@@ -16,6 +16,11 @@ module tt_um_kalman #(
     input  wire       ena,      // always 1 when the design is powered, so you can ignore it
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
+`ifdef USE_POWER_PINS
+    ,
+    inout  wire       VPWR,     // 1.8V
+    inout  wire       VGND      // 0V
+`endif
 );
 
     // SPI Pins
