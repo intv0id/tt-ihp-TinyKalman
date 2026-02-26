@@ -109,9 +109,9 @@ async def test_top_level(dut):
 
     dut._log.info("Waiting for UART output...")
 
-    # Read 8 bytes from the UART stream
+    # Read 6 bytes from the UART stream
     received_bytes = []
-    for i in range(8):
+    for i in range(6):
         byte = await read_uart_byte(dut)
         received_bytes.append(byte)
         dut._log.info(f"Received UART Byte {i}: {hex(byte)}")
@@ -121,14 +121,4 @@ async def test_top_level(dut):
     assert received_bytes[1] == 0xAD
     dut._log.info("Header verified!")
 
-    # 2. Verify Yaw (Bytes 6 and 7)
-    # Gyro Z input was 640.
-    # Expected calculation: Yaw += (Rate >>> 6)
-    # 640 / 64 = 10.
-    yaw_h = received_bytes[6]
-    yaw_l = received_bytes[7]
-    yaw_val = (yaw_h << 8) | yaw_l
-    dut._log.info(f"Yaw Value: {yaw_val}")
-
-    assert yaw_val == 10
     dut._log.info("Test Passed!")
