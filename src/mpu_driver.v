@@ -29,7 +29,6 @@ module mpu_driver #(
     output reg  signed [15:0] accel_z,
     output reg  signed [15:0] gyro_x,
     output reg  signed [15:0] gyro_y,
-    output reg  signed [15:0] gyro_z,
     output reg         valid
 );
 
@@ -96,7 +95,6 @@ module mpu_driver #(
             accel_z     <= 0;
             gyro_x      <= 0;
             gyro_y      <= 0;
-            gyro_z      <= 0;
             spi_data_in <= 0;
         end else begin
             // Default signals
@@ -188,11 +186,9 @@ module mpu_driver #(
                             9: gyro_x[7:0]  <= spi_data_out;
                             10: gyro_y[15:8] <= spi_data_out;
                             11: gyro_y[7:0]  <= spi_data_out;
-                            12: gyro_z[15:8] <= spi_data_out;
-                            13: gyro_z[7:0]  <= spi_data_out;
                         endcase
 
-                        if (byte_cnt == 13) begin
+                        if (byte_cnt == 11) begin
                             state <= S_UPDATE;
                         end else begin
                             byte_cnt <= byte_cnt + 1;
