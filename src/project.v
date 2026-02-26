@@ -34,7 +34,7 @@ module tt_um_kalman #(
 
     // Internal Signals
     wire signed [15:0] accel_x, accel_y, accel_z;
-    wire signed [15:0] gyro_x, gyro_y, gyro_z;
+    wire signed [15:0] gyro_x, gyro_y;
     wire mpu_valid;
 
     // MPU Driver
@@ -64,7 +64,6 @@ module tt_um_kalman #(
         .accel_z(accel_z),
         .gyro_x(gyro_x),
         .gyro_y(gyro_y),
-        .gyro_z(gyro_z),
         .valid(mpu_valid)
     );
 
@@ -82,8 +81,8 @@ module tt_um_kalman #(
     wire cordic_done;
 
     cordic #(
-        .WIDTH(12),
-        .STAGES(12)
+        .WIDTH(8),
+        .STAGES(8)
     ) cordic_inst (
         .clk(clk),
         .rst_n(rst_n),
@@ -122,16 +121,6 @@ module tt_um_kalman #(
         .angle_m(kalman_angle_m_pitch),
         .angle_out(pitch_est)
     );
-
-    // Yaw Integration
-    reg signed [15:0] yaw_est;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            yaw_est <= 0;
-        end else if (kalman_en) begin
-            yaw_est <= yaw_est + (gyro_z >>> 6); // Simple integration
-        end
-    end
 
     // Processing State Machine
     localparam S_IDLE       = 0;
@@ -263,8 +252,6 @@ module tt_um_kalman #(
                             3: uart_data <= roll_est[7:0];
                             4: uart_data <= pitch_est[15:8];
                             5: uart_data <= pitch_est[7:0];
-                            6: uart_data <= yaw_est[15:8];
-                            7: uart_data <= yaw_est[7:0];
                         endcase
                         state <= S_WAIT_UART;
                     end else if (uart_start) begin
@@ -275,7 +262,7 @@ module tt_um_kalman #(
                 S_WAIT_UART: begin
                     uart_start <= 0;
                     if (uart_done) begin
-                        if (uart_cnt == 7) begin
+                        if (uart_cnt == 5) begin
                             state <= S_IDLE;
                         end else begin
                             uart_cnt <= uart_cnt + 1;
