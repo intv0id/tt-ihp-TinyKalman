@@ -34,7 +34,7 @@ module tt_um_kalman #(
 
     // Internal Signals
     wire signed [15:0] accel_x, accel_y, accel_z;
-    wire signed [15:0] gyro_x, gyro_y, gyro_z;
+    wire signed [15:0] gyro_x, gyro_y;
     wire mpu_valid;
 
     // MPU Driver
@@ -64,7 +64,6 @@ module tt_um_kalman #(
         .accel_z(accel_z),
         .gyro_x(gyro_x),
         .gyro_y(gyro_y),
-        .gyro_z(gyro_z),
         .valid(mpu_valid)
     );
 
@@ -82,8 +81,8 @@ module tt_um_kalman #(
     wire cordic_done;
 
     cordic #(
-        .WIDTH(12),
-        .STAGES(12)
+        .WIDTH(8),
+        .STAGES(8)
     ) cordic_inst (
         .clk(clk),
         .rst_n(rst_n),

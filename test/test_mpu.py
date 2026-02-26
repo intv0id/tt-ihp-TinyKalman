@@ -82,11 +82,11 @@ async def test_mpu_init_and_read(dut):
 
     dut._log.info("Entered S_READ_BYTES loop")
 
-    # We expect 14 bytes to be read.
+    # We expect 12 bytes to be read.
     # We can mock MISO data.
     # For simplicity, let's just toggle MISO to produce some pattern.
 
-    for i in range(14):
+    for i in range(12):
         # Wait for start of byte transaction
         while dut.spi_start.value == 0:
             await RisingEdge(dut.clk)
