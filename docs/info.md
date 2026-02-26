@@ -9,13 +9,13 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-This project implements a simplified 1D Kalman Filter (Complementary Filter logic) to fuse Accelerometer and Gyroscope data from an MPU-6500 sensor. It calculates Roll and Pitch angles using a CORDIC algorithm for the accelerometer and integrates gyroscope data with a steady-state Kalman gain. Yaw is calculated by simple integration of the Z-axis gyroscope data.
+This project implements a simplified 1D Kalman Filter (Complementary Filter logic) to fuse Accelerometer and Gyroscope data from an MPU-6500 sensor. It calculates Roll and Pitch angles using a CORDIC algorithm for the accelerometer and integrates gyroscope data with a steady-state Kalman gain.
 
 The system consists of:
 *   **SPI Master**: Configures and reads data from the MPU-6500 sensor (100Hz sample rate).
 *   **CORDIC Core**: Calculates `atan2` for Roll and Pitch estimation from accelerometer data.
 *   **Kalman Filter**: Fuses the accelerometer angle with gyroscope rate.
-*   **UART Transmitter**: Outputs the calculated angles (Roll, Pitch, Yaw) as a binary stream at 9600 baud.
+*   **UART Transmitter**: Outputs the calculated angles (Roll, Pitch) as a binary stream at 9600 baud.
 
 Data Format (8 bytes per packet):
 1.  Header High: `0xDE`
@@ -24,8 +24,6 @@ Data Format (8 bytes per packet):
 4.  Roll Low
 5.  Pitch High
 6.  Pitch Low
-7.  Yaw High
-8.  Yaw Low
 
 ## How to test
 
