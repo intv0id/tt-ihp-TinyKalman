@@ -12,7 +12,7 @@ This project implements a simplified Kalman Filter for MPU-6500 sensor fusion on
 - **Sensor Interface**: SPI Master for MPU-6500 (Accelerometer + Gyroscope).
 - **Angle Calculation**: CORDIC-based `atan2` calculation for Roll and Pitch from accelerometer data.
 - **Sensor Fusion**: Steady-state Kalman Filter (Complementary Filter) to fuse Gyroscope rate with Accelerometer angle.
-- **Output**: UART Serial output (9600 baud) streaming Roll, Pitch, and Yaw.
+- **Output**: UART Serial output (9600 baud) streaming Roll, Pitch.
 
 ## Algorithm Details
 
@@ -42,12 +42,6 @@ The design uses a steady-state 1D Kalman Filter (mathematically equivalent to a 
 - **Gain ($K$):** The Kalman Gain is fixed at $1/64$ (`>>> 6`), balancing responsiveness and noise rejection for a standard 100Hz IMU loop.
 - **Time Step ($\Delta t$):** The rate shift factor (`>>> 6`) implicitly handles the scaling for the time step and gyro sensitivity.
 
-### 3. Yaw Integration
-
-Yaw ($\psi$) is calculated by simple integration of the Z-axis gyroscope rate, as there is no magnetometer for correction.
-
-- $\psi[k] = \psi[k-1] + (\text{GyroRate}_z \times \Delta t)$
-
 ## Pinout
 
 | Pin         | Function | Description                           |
@@ -72,8 +66,6 @@ The device outputs a continuous stream of 8-byte packets at 9600 baud.
 | 3    | Roll (Low Byte)   |
 | 4    | Pitch (High Byte) |
 | 5    | Pitch (Low Byte)  |
-| 6    | Yaw (High Byte)   |
-| 7    | Yaw (Low Byte)    |
 
 Angles are 16-bit signed integers. Scale: `32768 = 180 degrees`.
 
