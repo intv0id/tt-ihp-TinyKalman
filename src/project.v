@@ -1,8 +1,3 @@
-/*
- * Copyright (c) 2024 Your Name
- * SPDX-License-Identifier: Apache-2.0
- */
-
 `default_nettype none
 
 module tt_um_kalman #(
@@ -16,11 +11,6 @@ module tt_um_kalman #(
     input  wire       ena,      // always 1 when the design is powered, so you can ignore it
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
-`ifdef USE_POWER_PINS
-    ,
-    inout  wire       VPWR,     // 1.8V
-    inout  wire       VGND      // 0V
-`endif
 );
 
     // SPI Pins
@@ -58,13 +48,6 @@ module tt_um_kalman #(
     // The issue might be: mpu_driver uses `parameter` which defaults to calculation based on `SYS_CLK_FREQ`.
     // If we override `INIT_WAIT_CYCLES` on `mpu_inst`, it should work.
 
-    // Helper localparam for CLK_DIV
-`ifdef FAST_SIM
-    localparam CLK_DIV = 2;
-`else
-    localparam CLK_DIV = CLK_FREQ / 2000000;
-`endif
-
     mpu_driver #(
         .CLK_DIV(CLK_DIV), // Use calculated parameter below
         .SAMPLE_RATE_HZ(100),
@@ -84,6 +67,13 @@ module tt_um_kalman #(
         .gyro_z(gyro_z),
         .valid(mpu_valid)
     );
+
+    // Helper localparam for CLK_DIV
+`ifdef FAST_SIM
+    localparam CLK_DIV = 2;
+`else
+    localparam CLK_DIV = CLK_FREQ / 2000000;
+`endif
 
     // CORDIC Shared Instance
     reg cordic_start;
