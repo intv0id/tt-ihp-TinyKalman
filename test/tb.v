@@ -22,20 +22,9 @@ module tb ();
   wire [7:0] uo_out;
   wire [7:0] uio_out;
   wire [7:0] uio_oe;
-`ifdef USE_POWER_PINS
-  wire VPWR = 1'b1;
-  wire VGND = 1'b0;
-`endif
 
   // Replace tt_um_example with your module name:
   tt_um_kalman user_project (
-
-      // Include power ports for the Gate Level test:
-`ifdef USE_POWER_PINS
-      .VPWR(VPWR),
-      .VGND(VGND),
-`endif
-
       .ui_in  (ui_in),    // Dedicated inputs
       .uo_out (uo_out),   // Dedicated outputs
       .uio_in (uio_in),   // IOs: Input path
