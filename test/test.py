@@ -39,6 +39,7 @@ async def test_top_level(dut):
 
     dut.ui_in.value = 0
     dut.uio_in.value = 0
+
     dut.ena.value = 1
 
     dut._log.info("Applying Reset...")
