@@ -38,16 +38,6 @@ module tt_um_kalman #(
     wire mpu_valid;
 
     // MPU Driver
-    // Use localparam for derived parameters to avoid ambiguity,
-    // BUT we want to be able to override them for simulation speedup.
-    // If we use parameters here, they can be overridden by defparam on tt_um_kalman instance.
-
-    // Let's expose MPU parameters up to the top level for easier overriding?
-    // Or just trust the hierarchy.
-
-    // The issue might be: mpu_driver uses `parameter` which defaults to calculation based on `SYS_CLK_FREQ`.
-    // If we override `INIT_WAIT_CYCLES` on `mpu_inst`, it should work.
-
     mpu_driver #(
         .CLK_DIV(CLK_DIV), // Use calculated parameter below
         .SAMPLE_RATE_HZ(100),
