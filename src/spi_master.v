@@ -103,6 +103,7 @@ module spi_master #(
                         clk_cnt <= clk_cnt + 1;
                     end
                 end
+                default: state <= IDLE;
             endcase
         end
     end

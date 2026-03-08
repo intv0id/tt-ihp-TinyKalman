@@ -202,6 +202,7 @@ module mpu_driver #(
                     valid <= 1;
                     state <= S_IDLE;
                 end
+                default: state <= S_INIT;
             endcase
         end
     end
