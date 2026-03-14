@@ -27,15 +27,19 @@ Data Format (8 bytes per packet):
 
 ## How to test
 
-Connect an MPU-6500 sensor via SPI and a UART receiver (e.g., FTDI cable) to the output.
+To test the design on real hardware, you can use the [FPGA ASIC simulator breakout](https://tinytapeout.com/guides/fpga-breakout/) with an MPU-6500 sensor module and an FT232 serial probe.
+
 The default configuration assumes a 10MHz system clock.
 
-Pinout:
-*   `uo[0]`: SPI MOSI
-*   `uo[1]`: SPI SCLK
-*   `uo[2]`: SPI CS_N
-*   `ui[0]`: SPI MISO
-*   `uo[3]`: UART TX (9600 baud)
+**Wiring Instructions:**
+
+*   **FPGA Breakout `ui[0]`** -> **MPU6500 MISO (SDO)**
+*   **FPGA Breakout `uo[0]`** -> **MPU6500 MOSI (SDA)**
+*   **FPGA Breakout `uo[1]`** -> **MPU6500 SCLK (SCL)**
+*   **FPGA Breakout `uo[2]`** -> **MPU6500 CS_N (NCS)**
+*   **FPGA Breakout `uo[3]`** -> **FT232 RX**
+*   **FPGA Breakout GND**     -> **MPU6500 GND** & **FT232 GND**
+*   **FPGA Breakout VCC**     -> **MPU6500 VCC** & **FT232 VCC** (make sure voltage levels are compatible, usually 3.3V)
 
 For simulation, run `make` in the `test/` directory.
 
