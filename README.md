@@ -77,10 +77,10 @@ The default configuration assumes a 10MHz system clock.
 
 **Wiring Instructions:**
 
-*   **FPGA Breakout `ui_in[0]` (MISO)** -> **MPU6500 MISO (SDO)**
-*   **FPGA Breakout `uo_out[0]` (MOSI)** -> **MPU6500 MOSI (SDA)**
-*   **FPGA Breakout `uo_out[1]` (SCLK)** -> **MPU6500 SCLK (SCL)**
-*   **FPGA Breakout `uo_out[2]` (CS_N)** -> **MPU6500 CS_N (NCS)**
+*   **FPGA Breakout `ui_in[0]` (MISO)** -> **MPU6500 ADO**
+*   **FPGA Breakout `uo_out[0]` (MOSI)** -> **MPU6500 SDA**
+*   **FPGA Breakout `uo_out[1]` (SCLK)** -> **MPU6500 SCL**
+*   **FPGA Breakout `uo_out[2]` (CS_N)** -> **MPU6500 NCS**
 *   **FPGA Breakout `uo_out[3]` (TX)**   -> **FT232 RX**
 *   **FPGA Breakout GND**               -> **MPU6500 GND** & **FT232 GND**
 *   **FPGA Breakout VCC**               -> **MPU6500 VCC** & **FT232 VCC** (make sure voltage levels are compatible, usually 3.3V)
