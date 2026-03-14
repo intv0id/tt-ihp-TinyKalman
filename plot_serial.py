@@ -10,6 +10,7 @@ def read_data(ser, max_len=100):
     roll_data = deque(maxlen=max_len)
     pitch_data = deque(maxlen=max_len)
 
+    print("Waiting for data...")
     while True:
         # Align to header
         b1 = ser.read(1)
@@ -22,7 +23,14 @@ def read_data(ser, max_len=100):
                     # Convert to degrees
                     roll_deg = roll * (180.0 / 32768.0)
                     pitch_deg = pitch * (180.0 / 32768.0)
+                    print(f"Received Roll: {roll_deg:.2f}, Pitch: {pitch_deg:.2f}")
                     yield roll_deg, pitch_deg
+                else:
+                    print("Incomplete data packet received")
+            else:
+                pass # print(f"Unexpected byte after 0xde: {b2}")
+        elif b1 != b'':
+            pass # print(f"Unexpected byte: {b1}")
 
 def update(frame, ser, roll_data, pitch_data, line_roll, line_pitch, max_len):
     try:
@@ -39,6 +47,8 @@ def update(frame, ser, roll_data, pitch_data, line_roll, line_pitch, max_len):
         ax.set_xlim(0, max_len)
         ax.set_ylim(-180, 180)
 
+    except StopIteration:
+        pass
     except Exception as e:
         print(f"Error reading: {e}")
 
