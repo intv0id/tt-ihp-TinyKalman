@@ -55,6 +55,13 @@ The default configuration assumes a 10MHz system clock.
    ./tt/tt_fpga.py configure --port /dev/cu.usbmodem<your_port_number> --upload --name path/to/extracted/tt_um_kalman.bin --set-default --clockrate 10000000
    ```
 
+
+**Live Plotting:**
+To plot the data live using Python from the FT232, you can use the provided `plot_serial.py` script.
+
+1.  Install the required dependencies: `pip install pyserial matplotlib`
+2.  Run the script: `python3 plot_serial.py --port /dev/ttyUSB0`
+
 For simulation, run `make` in the `test/` directory.
 
 ## External hardware
