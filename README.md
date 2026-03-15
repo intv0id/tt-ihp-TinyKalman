@@ -99,6 +99,22 @@ The default configuration assumes a 10MHz system clock.
    ./tt/tt_fpga.py configure --port /dev/cu.usbmodem<your_port_number> --upload --name path/to/extracted/tt_um_kalman.bin --set-default --clockrate 10000000
    ```
 
+
+**Running on the Demoboard ETR (using mpremote):**
+1. Connect the TinyTapeout Demoboard ETR to your computer.
+2. Install `mpremote`:
+   ```bash
+   pip install mpremote
+   ```
+3. Open the REPL using `mpremote` and enable the project:
+   ```bash
+   mpremote repl
+   ```
+   ```python
+   # Enable the project
+   tt.shuttle.tt_um_kalman.enable()
+   ```
+
 ## Live Plotting
 
 To plot the data live using Python from the FT232, you can use the provided `plot_serial.py` script.
