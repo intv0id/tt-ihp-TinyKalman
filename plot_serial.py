@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from collections import deque
 
-def read_data(ser, max_len=100):
+def read_data(ser, max_len=10000):
     header = b'\xde\xad'
     roll_data = deque(maxlen=max_len)
     pitch_data = deque(maxlen=max_len)
@@ -63,8 +63,8 @@ def update(frame, ser, roll_data, pitch_data, line_roll, line_pitch, max_len):
 def main():
     parser = argparse.ArgumentParser(description='Live plot roll and pitch from FT232')
     parser.add_argument('--port', type=str, default='/dev/ttyUSB0', help='Serial port')
-    parser.add_argument('--baud', type=int, default=9600, help='Baud rate')
-    parser.add_argument('--samples', type=int, default=100, help='Number of samples to show')
+    parser.add_argument('--baud', type=int, default=115200, help='Baud rate')
+    parser.add_argument('--samples', type=int, default=10000, help='Number of samples to show')
     args = parser.parse_args()
 
     try:
@@ -91,7 +91,7 @@ def main():
     ani = animation.FuncAnimation(
         fig, update, frames=data_gen,
         fargs=(ser, roll_data, pitch_data, line_roll, line_pitch, args.samples),
-        interval=50, blit=True, save_count=100
+        interval=1000/115200, blit=True, save_count=10000
     )
 
     plt.show()

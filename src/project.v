@@ -141,7 +141,7 @@ module tt_um_kalman #(
 `ifdef FAST_SIM
     localparam BAUD_DIV_PARAM = 5;
 `else
-    localparam BAUD_DIV_PARAM = CLK_FREQ / 9600;
+    localparam BAUD_DIV_PARAM = CLK_FREQ / 115200;
 `endif
 
     uart_tx #(
