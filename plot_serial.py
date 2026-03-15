@@ -11,11 +11,17 @@ def read_data(ser, max_len=100):
     pitch_data = deque(maxlen=max_len)
 
     print("Waiting for data...")
-    while True:
+    while ser.is_open:
         # Align to header
         b1 = ser.read(1)
+        if not b1:
+            print("Serial port timed out or disconnected.")
+            break
         if b1 == b'\xde':
             b2 = ser.read(1)
+            if not b2:
+                print("Serial port timed out or disconnected.")
+                break
             if b2 == b'\xad':
                 data = ser.read(4)
                 if len(data) == 4:
@@ -34,7 +40,7 @@ def read_data(ser, max_len=100):
 
 def update(frame, ser, roll_data, pitch_data, line_roll, line_pitch, max_len):
     try:
-        roll, pitch = next(frame)
+        roll, pitch = frame
         roll_data.append(roll)
         pitch_data.append(pitch)
 
