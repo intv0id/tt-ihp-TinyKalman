@@ -74,6 +74,7 @@ module spi_master #(
                         state     <= WAIT_FALL;
                     end else begin
                         busy <= 1'b0;
+                        mosi <= 1'b0; // Ensure MOSI idles low
                     end
                 end
 
@@ -111,6 +112,7 @@ module spi_master #(
                         done     <= 1'b1;
                         busy     <= 1'b0;
                         data_out <= shift_reg;
+                        mosi     <= 1'b0; // Ensure MOSI clears when done
                     end else begin
                         clk_cnt <= clk_cnt + 1;
                     end
