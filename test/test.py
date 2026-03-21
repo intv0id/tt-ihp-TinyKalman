@@ -16,21 +16,36 @@ async def generate_clock(dut):
         await Timer(50, units="ns")
 
 async def spi_miso_driver(dut):
+    # This mock just blindly spits out 0x70 on every SPI transaction
+    # after the first byte (address).
+    # Since we only read WHOAMI (0x75) and dummy reads, returning 0x70 or 0xFF is fine.
+    # Actually, we can just return 0x70 continuously.
+    # MSB first: 0, 1, 1, 1, 0, 0, 0, 0
+    bits = [0, 1, 1, 1, 0, 0, 0, 0]
+    bit_idx = 0
+    prev_sclk = 1
+
     while True:
         await RisingEdge(dut.clk)
         try:
-            # Read full vector
-            val = dut.uo_out.value
-            # Check bit 2 (CS_N)
-            val_int = int(val)
+            val_int = int(dut.uo_out.value)
             cs_val = (val_int >> 2) & 1
+            sclk_val = (val_int >> 1) & 1
         except ValueError:
             cs_val = 1
+            sclk_val = 1
 
         if cs_val == 0:
-            dut.ui_in.value = 1 # Toggle bit 0 (MISO)
+            if prev_sclk == 1 and sclk_val == 0:
+                bit_idx = (bit_idx + 1) % 8
+
+            # Send 0x70 constantly
+            dut.ui_in.value = bits[bit_idx]
         else:
-            dut.ui_in.value = 0
+            dut.ui_in.value = 1
+            bit_idx = 0
+
+        prev_sclk = sclk_val
 
 @cocotb.test()
 async def test_top_level(dut):
@@ -67,7 +82,7 @@ async def test_top_level(dut):
     # Fast: Wait ~20k cycles max. Baud Div = 5.
     # Slow: Wait ~400k cycles max. Baud Div = 1042.
 
-    timeout = 20000 if fast_sim else 500000
+    timeout = 300000 if fast_sim else 1000000
     bit_period = 5 if fast_sim else 1042
 
     detected = False

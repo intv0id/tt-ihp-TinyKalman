@@ -56,15 +56,47 @@ async def test_mpu_init_and_read(dut):
     dut._log.info("Entered S_WAKE_DELAY (Wait 200ms)")
     assert dut.spi_cs_n.value == 1
 
-    # Wait for S_IDLE (state 7)
+    # Wait for S_CHECK_WHOAMI (state 7)
     while dut.state.value != 7:
+        await RisingEdge(dut.clk)
+
+    dut._log.info("Entered S_CHECK_WHOAMI")
+
+    # Wait for Address write to finish and S_CHECK_WAIT to trigger dummy read
+    while dut.state.value != 8:
+        await RisingEdge(dut.clk)
+
+    while dut.spi_inst.state.value == 0:
+        await RisingEdge(dut.clk)
+
+    # Now it sends 0x75 (WHO_AM_I address). Wait for it to finish.
+    while dut.spi_inst.done.value == 0:
+        await RisingEdge(dut.clk)
+
+    # Wait for spi_master to start the dummy byte (read payload)
+    while dut.spi_inst.state.value == 0:
+        await RisingEdge(dut.clk)
+
+    # Now it is reading. Feed 0x70 on MISO.
+    bits = [0, 1, 1, 1, 0, 0, 0, 0]
+    for b in bits:
+        # Wait for falling edge of SCLK
+        while dut.spi_sclk.value == 1:
+            await RisingEdge(dut.clk)
+        dut.spi_miso.value = b
+        # Wait for rising edge of SCLK
+        while dut.spi_sclk.value == 0:
+            await RisingEdge(dut.clk)
+
+    # Wait for S_IDLE (state 9)
+    while dut.state.value != 9:
         await RisingEdge(dut.clk)
 
     dut._log.info("Entered S_IDLE")
     assert dut.spi_cs_n.value == 1
 
-    # Wait for S_READ_START (state 8)
-    while dut.state.value != 8:
+    # Wait for S_READ_START (state 10)
+    while dut.state.value != 10:
         await RisingEdge(dut.clk)
 
     dut._log.info("Entered S_READ_START")
@@ -72,8 +104,8 @@ async def test_mpu_init_and_read(dut):
     for i in range(6):
         dut._log.info(f"Reading register pair {i}")
 
-        # Wait for S_READ_WAIT (state 9)
-        while dut.state.value != 9:
+        # Wait for S_READ_WAIT (state 11)
+        while dut.state.value != 11:
             await RisingEdge(dut.clk)
 
         # The submodule is now active, we need to inject MISO at the right time
@@ -85,7 +117,7 @@ async def test_mpu_init_and_read(dut):
 
         # Wait for it to finish the read
         # S_READ_WAIT goes back to S_READ_START or S_UPDATE
-        while dut.state.value == 9:
+        while dut.state.value == 11:
             await RisingEdge(dut.clk)
 
         assert dut.spi_cs_n.value == 1
