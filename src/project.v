@@ -54,6 +54,7 @@ module tt_um_kalman #(
         .accel_z(accel_z),
         .gyro_x(gyro_x),
         .gyro_y(gyro_y),
+        .gyro_z(),
         .valid(mpu_valid)
     );
 
