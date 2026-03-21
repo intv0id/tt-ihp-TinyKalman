@@ -164,11 +164,12 @@ module mpu_driver #(
     localparam S_WAKE_DELAY    = 6;
     localparam S_CHECK_WHOAMI  = 7;
     localparam S_CHECK_WAIT    = 8;
-    localparam S_IDLE          = 9;
-    localparam S_READ_START    = 10;
-    localparam S_READ_WAIT     = 11;
-    localparam S_READ_DELAY    = 12;
-    localparam S_UPDATE        = 13;
+    localparam S_RETRY_DELAY   = 9;
+    localparam S_IDLE          = 10;
+    localparam S_READ_START    = 11;
+    localparam S_READ_WAIT     = 12;
+    localparam S_READ_DELAY    = 13;
+    localparam S_UPDATE        = 14;
 
     reg [3:0]  state;
     reg [2:0]  read_idx;
@@ -269,9 +270,18 @@ module mpu_driver #(
                         if (read8_data == 8'h70) begin
                             state <= S_IDLE;
                         end else begin
-                            // Loop back to init if WHO_AM_I fails
-                            state <= S_INIT;
+                            // Loop back to init if WHO_AM_I fails, but wait first
+                            timer <= 0;
+                            state <= S_RETRY_DELAY;
                         end
+                    end
+                end
+
+                S_RETRY_DELAY: begin
+                    if (timer >= delay_100ms) begin
+                        state <= S_INIT;
+                    end else begin
+                        timer <= timer + 1;
                     end
                 end
 
