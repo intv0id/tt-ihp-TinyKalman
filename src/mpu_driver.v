@@ -49,110 +49,151 @@ module mpu_driver #(
     assign REG_ADDRS[5] = 8'h47; // GYRO_ZOUT_H
 
     // SPI Master Instance
-    wire       spi_start;
-    wire [7:0] spi_data_in;
-    wire [7:0] spi_data_out;
-    wire       spi_busy;
-    wire       spi_done;
 
-    spi_master #(
-        .CLK_DIV(CLK_DIV)
-    ) spi_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .start(spi_start),
-        .data_in(spi_data_in),
-        .miso(spi_miso),
-        .mosi(spi_mosi),
-        .sclk(spi_sclk),
-        .busy(spi_busy),
-        .done(spi_done),
-        .data_out(spi_data_out)
+    wire       spi_tx_ready;
+    wire [1:0] spi_rx_count;
+    wire       spi_rx_dv;
+    wire [7:0] spi_rx_byte;
+
+    reg  [1:0] spi_tx_count;
+    reg  [7:0] spi_tx_byte;
+    reg        spi_tx_dv;
+
+    SPI_Master_With_Single_CS #(
+        .SPI_MODE(3),
+        .CLKS_PER_HALF_BIT(CLK_DIV),
+        .MAX_BYTES_PER_CS(3),
+        .CS_INACTIVE_CLKS(10)
+    ) spi_master_inst (
+        .i_Rst_L(rst_n),
+        .i_Clk(clk),
+        .i_TX_Count(spi_tx_count),
+        .i_TX_Byte(spi_tx_byte),
+        .i_TX_DV(spi_tx_dv),
+        .o_TX_Ready(spi_tx_ready),
+        .o_RX_Count(spi_rx_count),
+        .o_RX_DV(spi_rx_dv),
+        .o_RX_Byte(spi_rx_byte),
+        .o_SPI_Clk(spi_sclk),
+        .i_SPI_MISO(spi_miso),
+        .o_SPI_MOSI(spi_mosi),
+        .o_SPI_CS_n(spi_cs_n)
     );
 
-    // SPI Sub-modules
+    // SPI Interface State Machine
+    localparam SPI_IDLE       = 0;
+    localparam SPI_WAIT_TX1   = 1;
+    localparam SPI_WAIT_TX2   = 2;
+    localparam SPI_WAIT_TX3   = 3;
+
+    reg [1:0] spi_fsm_state;
+
     reg         write_start;
     reg  [7:0]  write_addr;
     reg  [7:0]  write_data;
-    wire        write_busy;
-    wire        write_done;
-    wire        write_spi_start;
-    wire [7:0]  write_spi_data_in;
-    wire        write_spi_cs_n;
-
-    spi_write_reg spi_write_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .start(write_start),
-        .reg_addr(write_addr),
-        .reg_data(write_data),
-        .busy(write_busy),
-        .done(write_done),
-        .spi_start(write_spi_start),
-        .spi_data_in(write_spi_data_in),
-        .spi_busy(spi_busy),
-        .spi_done(spi_done),
-        .spi_cs_n(write_spi_cs_n)
-    );
+    reg         write_done;
 
     reg         read_start;
     reg  [7:0]  read_addr;
-    wire [15:0] read_data;
-    wire        read_busy;
-    wire        read_done;
-    wire        read_spi_start;
-    wire [7:0]  read_spi_data_in;
-    wire        read_spi_cs_n;
+    reg  [15:0] read_data;
+    reg         read_done;
 
-    spi_read_reg_16 spi_read_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .start(read_start),
-        .reg_addr(read_addr),
-        .reg_data(read_data),
-        .busy(read_busy),
-        .done(read_done),
-        .spi_start(read_spi_start),
-        .spi_data_in(read_spi_data_in),
-        .spi_data_out(spi_data_out),
-        .spi_busy(spi_busy),
-        .spi_done(spi_done),
-        .spi_cs_n(read_spi_cs_n)
-    );
     reg         read8_start;
     reg  [7:0]  read8_addr;
-    wire [7:0]  read8_data;
-    wire        read8_busy;
-    wire        read8_done;
-    wire        read8_spi_start;
-    wire [7:0]  read8_spi_data_in;
-    wire        read8_spi_cs_n;
+    reg  [7:0]  read8_data;
+    reg         read8_done;
 
-    spi_read_reg_8 spi_read8_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .start(read8_start),
-        .reg_addr(read8_addr),
-        .reg_data(read8_data),
-        .busy(read8_busy),
-        .done(read8_done),
-        .spi_start(read8_spi_start),
-        .spi_data_in(read8_spi_data_in),
-        .spi_data_out(spi_data_out),
-        .spi_busy(spi_busy),
-        .spi_done(spi_done),
-        .spi_cs_n(read8_spi_cs_n)
-    );
+    reg [1:0] spi_op; // 0: none, 1: write, 2: read8, 3: read16
 
-    // Muxing for spi_master inputs based on active sub-module
-    // We assume write and read are never active simultaneously.
-    wire active_write = write_busy || write_start;
-    wire active_read  = read_busy || read_start;
-    wire active_read8 = read8_busy || read8_start;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            spi_fsm_state <= SPI_IDLE;
+            spi_tx_count  <= 0;
+            spi_tx_byte   <= 0;
+            spi_tx_dv     <= 0;
+            write_done    <= 0;
+            read_done     <= 0;
+            read8_done    <= 0;
+            read8_data    <= 0;
+            read_data     <= 0;
+            spi_op        <= 0;
+        end else begin
+            write_done <= 0;
+            read_done  <= 0;
+            read8_done <= 0;
+            spi_tx_dv  <= 0;
 
-    assign spi_start   = active_write ? write_spi_start   : (active_read ? read_spi_start   : (active_read8 ? read8_spi_start : 1'b0));
-    assign spi_data_in = active_write ? write_spi_data_in : (active_read ? read_spi_data_in : (active_read8 ? read8_spi_data_in : 8'h00));
-    assign spi_cs_n    = active_write ? write_spi_cs_n    : (active_read ? read_spi_cs_n    : (active_read8 ? read8_spi_cs_n : 1'b1));
+            // Continously capture rx bytes to ensure we don't miss any if timing is tight
+            if (spi_op == 2 && spi_rx_dv && spi_rx_count == 1) begin
+                read8_data <= spi_rx_byte;
+            end
+            if (spi_op == 3 && spi_rx_dv) begin
+                if (spi_rx_count == 1) read_data[15:8] <= spi_rx_byte;
+                if (spi_rx_count == 2) read_data[7:0]  <= spi_rx_byte;
+            end
+
+            case (spi_fsm_state)
+                SPI_IDLE: begin
+                    if (write_start) begin
+                        spi_tx_count  <= 2;
+                        spi_tx_byte   <= write_addr;
+                        spi_tx_dv     <= 1;
+                        spi_op        <= 1;
+                        spi_fsm_state <= SPI_WAIT_TX1;
+                    end else if (read8_start) begin
+                        spi_tx_count  <= 2;
+                        spi_tx_byte   <= read8_addr | 8'h80; // Set MSB for read
+                        spi_tx_dv     <= 1;
+                        spi_op        <= 2;
+                        spi_fsm_state <= SPI_WAIT_TX1;
+                    end else if (read_start) begin
+                        spi_tx_count  <= 3;
+                        spi_tx_byte   <= read_addr | 8'h80; // Set MSB for read
+                        spi_tx_dv     <= 1;
+                        spi_op        <= 3;
+                        spi_fsm_state <= SPI_WAIT_TX1;
+                    end
+                end
+
+                SPI_WAIT_TX1: begin
+                    if (spi_tx_ready) begin
+                        if (spi_op == 1) begin
+                            spi_tx_byte   <= write_data;
+                        end else begin
+                            spi_tx_byte   <= 8'h00; // Dummy byte
+                        end
+                        spi_tx_dv     <= 1;
+                        spi_fsm_state <= SPI_WAIT_TX2;
+                    end
+                end
+
+                SPI_WAIT_TX2: begin
+                    if (spi_tx_ready) begin
+                        if (spi_op == 3) begin
+                            // 16-bit read needs one more byte
+                            spi_tx_byte   <= 8'h00; // Dummy byte
+                            spi_tx_dv     <= 1;
+                            spi_fsm_state <= SPI_WAIT_TX3;
+                        end else begin
+                            // 8-bit read or write is done
+                            if (spi_op == 1) write_done <= 1;
+                            if (spi_op == 2) read8_done <= 1;
+                            spi_op        <= 0;
+                            spi_fsm_state <= SPI_IDLE;
+                        end
+                    end
+                end
+
+                SPI_WAIT_TX3: begin
+                    if (spi_tx_ready) begin
+                        read_done     <= 1;
+                        spi_op        <= 0;
+                        spi_fsm_state <= SPI_IDLE;
+                    end
+                end
+            endcase
+        end
+    end
 
     // Main MPU States
     localparam S_INIT          = 0;
@@ -175,9 +216,15 @@ module mpu_driver #(
     reg [2:0]  read_idx;
     reg [31:0] timer;
 
+`ifdef FAST_SIM
+    wire [31:0] delay_100ms = 10;
+    wire [31:0] delay_200ms = 20;
+    wire [31:0] delay_between_reads = 20;
+`else
     wire [31:0] delay_100ms = INIT_WAIT_100MS;
     wire [31:0] delay_200ms = INIT_WAIT_200MS;
     wire [31:0] delay_between_reads = 20;
+`endif
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin

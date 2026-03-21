@@ -62,29 +62,23 @@ async def test_mpu_init_and_read(dut):
 
     dut._log.info("Entered S_CHECK_WHOAMI")
 
-    # Wait for Address write to finish and S_CHECK_WAIT to trigger dummy read
-    while dut.state.value != 8:
+    # Wait for CS low
+    while dut.spi_cs_n.value == 1:
         await RisingEdge(dut.clk)
 
-    while dut.spi_inst.state.value == 0:
-        await RisingEdge(dut.clk)
+    # Skip 8 SCLK falling edges (Address)
+    for _ in range(8):
+        while dut.spi_sclk.value == 1:
+            await RisingEdge(dut.clk)
+        while dut.spi_sclk.value == 0:
+            await RisingEdge(dut.clk)
 
-    # Now it sends 0x75 (WHO_AM_I address). Wait for it to finish.
-    while dut.spi_inst.done.value == 0:
-        await RisingEdge(dut.clk)
-
-    # Wait for spi_master to start the dummy byte (read payload)
-    while dut.spi_inst.state.value == 0:
-        await RisingEdge(dut.clk)
-
-    # Now it is reading. Feed 0x70 on MISO.
+    # Send 0x70
     bits = [0, 1, 1, 1, 0, 0, 0, 0]
     for b in bits:
-        # Wait for falling edge of SCLK
         while dut.spi_sclk.value == 1:
             await RisingEdge(dut.clk)
         dut.spi_miso.value = b
-        # Wait for rising edge of SCLK
         while dut.spi_sclk.value == 0:
             await RisingEdge(dut.clk)
 

@@ -4,24 +4,19 @@ from cocotb.triggers import ClockCycles, RisingEdge, Timer
 async def reset(dut):
     dut.rst_n.value = 0
     dut.clk.value = 0
-    await Timer(100, units="ns")
+    await Timer(100, unit="ns")
     dut.rst_n.value = 1
-    await Timer(100, units="ns")
+    await Timer(100, unit="ns")
 
 async def generate_clock(dut):
     while True:
         dut.clk.value = 0
-        await Timer(50, units="ns") # 10MHz
+        await Timer(50, unit="ns") # 10MHz
         dut.clk.value = 1
-        await Timer(50, units="ns")
+        await Timer(50, unit="ns")
 
 async def spi_miso_driver(dut):
-    # This mock just blindly spits out 0x70 on every SPI transaction
-    # after the first byte (address).
-    # Since we only read WHOAMI (0x75) and dummy reads, returning 0x70 or 0xFF is fine.
-    # Actually, we can just return 0x70 continuously.
-    # MSB first: 0, 1, 1, 1, 0, 0, 0, 0
-    bits = [0, 1, 1, 1, 0, 0, 0, 0]
+    bits = [0, 1, 1, 1, 0, 0, 0, 0] # 0x70
     bit_idx = 0
     prev_sclk = 1
 
@@ -36,17 +31,14 @@ async def spi_miso_driver(dut):
             sclk_val = 1
 
         if cs_val == 0:
+            dut.ui_in.value = bits[bit_idx]
             if prev_sclk == 1 and sclk_val == 0:
                 bit_idx = (bit_idx + 1) % 8
-
-            # Send 0x70 constantly
-            dut.ui_in.value = bits[bit_idx]
         else:
             dut.ui_in.value = 1
             bit_idx = 0
 
         prev_sclk = sclk_val
-
 @cocotb.test()
 async def test_top_level(dut):
     cocotb.start_soon(generate_clock(dut))

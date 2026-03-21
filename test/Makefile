@@ -1,10 +1,10 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v spi_master.v mpu_driver.v spi_write_reg.v spi_read_reg_8.v spi_read_reg_16.v cordic.v kalman.v uart_tx.v
+PROJECT_SOURCES = project.v SPI_Master.v mpu_driver.v SPI_Master_With_Single_CS.v   cordic.v kalman.v uart_tx.v
 
 # Enable Fast Simulation
-COMPILE_ARGS += -DFAST_SIM
+COMPILE_ARGS += -DFAST_SIM -Ptb.dut.mpu_inst.INIT_WAIT_100MS=10 -Ptb.dut.mpu_inst.INIT_WAIT_200MS=20 -Ptb.dut.mpu_inst.TIMER_LIMIT=20 -Ptb.dut.uart_inst.BAUD_DIV=5
 
 ifneq ($(GATES),yes)
 
