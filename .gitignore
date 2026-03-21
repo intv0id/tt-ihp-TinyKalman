@@ -14,5 +14,4 @@ test/gate_level_netlist.v
 build/
 config.ini
 _tt_fpga_top.v
-prototype/
 test_env/
