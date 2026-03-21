@@ -139,7 +139,8 @@ module mpu_driver #(
     localparam S_IDLE          = 7;
     localparam S_READ_START    = 8;
     localparam S_READ_WAIT     = 9;
-    localparam S_UPDATE        = 10;
+    localparam S_READ_DELAY    = 10;
+    localparam S_UPDATE        = 11;
 
     reg [3:0]  state;
     reg [2:0]  read_idx;
@@ -147,6 +148,7 @@ module mpu_driver #(
 
     wire [31:0] delay_100ms = INIT_WAIT_100MS;
     wire [31:0] delay_200ms = INIT_WAIT_200MS;
+    wire [31:0] delay_between_reads = 20;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -256,8 +258,18 @@ module mpu_driver #(
                             state <= S_UPDATE;
                         end else begin
                             read_idx <= read_idx + 1;
-                            state    <= S_READ_START;
+                            timer    <= 0;
+                            state    <= S_READ_DELAY;
+
                         end
+                    end
+                end
+
+                S_READ_DELAY: begin
+                    if (timer >= delay_between_reads) begin
+                        state <= S_READ_START;
+                    end else begin
+                        timer <= timer + 1;
                     end
                 end
 
