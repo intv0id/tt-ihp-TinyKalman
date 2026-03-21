@@ -12,7 +12,7 @@ module spi_master #(
     output reg        done,
 
     // SPI Interface
-    output reg        sclk,
+    output wire       sclk,
     output reg        mosi,
     input  wire       miso
 );
@@ -25,11 +25,15 @@ module spi_master #(
     localparam IDLE      = 0;
     localparam WAIT_FALL = 1; // Wait for falling edge to shift
     localparam WAIT_RISE = 2; // Wait for rising edge to sample
+    localparam WAIT_END  = 3; // Wait for half a cycle before completing
 
     reg [1:0] state;
     reg [2:0] bit_cnt;
     reg [7:0] clk_cnt;
     reg [7:0] shift_reg;
+    reg       sclk_reg;
+
+    assign sclk = sclk_reg;
 
     // 2-stage synchronizer for MISO
     reg miso_sync_0;
@@ -48,7 +52,7 @@ module spi_master #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state     <= IDLE;
-            sclk      <= 1'b1; // CPOL=1
+            sclk_reg  <= 1'b1; // CPOL=1
             mosi      <= 1'b0;
             busy      <= 1'b0;
             done      <= 1'b0;
@@ -61,7 +65,7 @@ module spi_master #(
 
             case (state)
                 IDLE: begin
-                    sclk <= 1'b1;
+                    sclk_reg <= 1'b1;
                     if (start) begin
                         busy      <= 1'b1;
                         shift_reg <= data_in;
@@ -75,7 +79,7 @@ module spi_master #(
 
                 WAIT_FALL: begin // Waiting to drive SCLK Low (Leading Edge)
                     if (clk_cnt == CLK_DIV - 1) begin
-                        sclk    <= 1'b0; // Drive Low (Leading Edge)
+                        sclk_reg <= 1'b0; // Drive Low (Leading Edge)
                         mosi    <= shift_reg[7]; // Shift out MSB (CPHA=1: Shift on leading)
                         clk_cnt <= 0;
                         state   <= WAIT_RISE;
@@ -86,15 +90,12 @@ module spi_master #(
 
                 WAIT_RISE: begin // Waiting to drive SCLK High (Trailing Edge)
                     if (clk_cnt == CLK_DIV - 1) begin
-                        sclk      <= 1'b1; // Drive High (Trailing Edge)
+                        sclk_reg  <= 1'b1; // Drive High (Trailing Edge)
                         shift_reg <= {shift_reg[6:0], miso_sync_1}; // Sample MISO (CPHA=1: Sample on trailing)
                         clk_cnt   <= 0;
 
                         if (bit_cnt == 7) begin
-                            state    <= IDLE;
-                            done     <= 1'b1;
-                            busy     <= 1'b0;
-                            data_out <= {shift_reg[6:0], miso_sync_1};
+                            state    <= WAIT_END;
                         end else begin
                             bit_cnt <= bit_cnt + 1;
                             state   <= WAIT_FALL;
@@ -103,6 +104,18 @@ module spi_master #(
                         clk_cnt <= clk_cnt + 1;
                     end
                 end
+
+                WAIT_END: begin // Wait half a cycle after last sample before completing
+                    if (clk_cnt == CLK_DIV - 1) begin
+                        state    <= IDLE;
+                        done     <= 1'b1;
+                        busy     <= 1'b0;
+                        data_out <= shift_reg;
+                    end else begin
+                        clk_cnt <= clk_cnt + 1;
+                    end
+                end
+
                 default: state <= IDLE;
             endcase
         end
