@@ -37,6 +37,13 @@ module tt_um_kalman #(
     wire signed [15:0] gyro_x, gyro_y;
     wire mpu_valid;
 
+    // Helper localparam for CLK_DIV
+`ifdef FAST_SIM
+    localparam CLK_DIV = 2;
+`else
+    localparam CLK_DIV = CLK_FREQ / 400000; // Target 200kHz SPI clock
+`endif
+
     // MPU Driver
     mpu_driver #(
         .CLK_DIV(CLK_DIV), // Use calculated parameter below
@@ -57,13 +64,6 @@ module tt_um_kalman #(
         .gyro_z(),
         .valid(mpu_valid)
     );
-
-    // Helper localparam for CLK_DIV
-`ifdef FAST_SIM
-    localparam CLK_DIV = 2;
-`else
-    localparam CLK_DIV = CLK_FREQ / 2000000;
-`endif
 
     // CORDIC Shared Instance
     reg cordic_start;
