@@ -20,6 +20,8 @@ project:
     - "project.v"
     - "spi_master.v"
     - "mpu_driver.v"
+    - "spi_write_reg.v"
+    - "spi_read_reg_16.v"
     - "cordic.v"
     - "kalman.v"
     - "uart_tx.v"
