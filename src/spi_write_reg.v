@@ -1,6 +1,13 @@
 `default_nettype none
 
-module spi_write_reg (
+module spi_write_reg #(
+`ifdef FAST_SIM
+    parameter DELAY_CS_CYCLES = 5
+`else
+    // 65 us at 10 MHz = 650 cycles
+    parameter DELAY_CS_CYCLES = 650
+`endif
+)(
     input  wire       clk,
     input  wire       rst_n,
 
@@ -20,13 +27,14 @@ module spi_write_reg (
 );
 
     localparam S_IDLE       = 0;
-    localparam S_SEND_ADDR  = 1;
+    localparam S_DELAY_CS   = 1;
     localparam S_WAIT_ADDR  = 2;
-    localparam S_SEND_DATA  = 3;
-    localparam S_WAIT_DATA  = 4;
+    localparam S_WAIT_DATA  = 3;
 
-    reg [2:0] state;
+    reg [1:0] state;
     reg [7:0] stored_data;
+    reg [7:0] stored_addr;
+    reg [15:0] timer;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -37,6 +45,8 @@ module spi_write_reg (
             spi_data_in <= 0;
             spi_cs_n    <= 1;
             stored_data <= 0;
+            stored_addr <= 0;
+            timer       <= 0;
         end else begin
             done      <= 0;
             spi_start <= 0;
@@ -47,12 +57,22 @@ module spi_write_reg (
                     if (start) begin
                         busy        <= 1;
                         stored_data <= reg_data;
+                        stored_addr <= reg_addr;
                         spi_cs_n    <= 0;
-                        spi_data_in <= reg_addr; // Write (MSB 0)
+                        timer       <= 0;
+                        state       <= S_DELAY_CS;
+                    end else begin
+                        busy <= 0;
+                    end
+                end
+
+                S_DELAY_CS: begin
+                    if (timer >= DELAY_CS_CYCLES) begin
+                        spi_data_in <= stored_addr; // Write (MSB 0)
                         spi_start   <= 1;
                         state       <= S_WAIT_ADDR;
                     end else begin
-                        busy <= 0;
+                        timer <= timer + 1;
                     end
                 end
 
