@@ -1,7 +1,7 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v spi_master.v mpu_driver.v spi_write_reg.v spi_read_reg_16.v cordic.v kalman.v uart_tx.v
+PROJECT_SOURCES = project.v spi_master.v mpu_driver.v spi_write_reg.v spi_read_reg_8.v spi_read_reg_16.v cordic.v kalman.v uart_tx.v
 
 # Enable Fast Simulation
 COMPILE_ARGS += -DFAST_SIM

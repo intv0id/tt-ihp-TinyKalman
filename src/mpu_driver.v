@@ -37,6 +37,7 @@ module mpu_driver #(
 
     // MPU-6500 Registers
     localparam MPU_PWR_MGMT_1   = 8'h6B;
+    localparam MPU_WHO_AM_I     = 8'h75;
 
     // Register Addresses for reading
     wire [7:0] REG_ADDRS [0:5];
@@ -118,15 +119,40 @@ module mpu_driver #(
         .spi_done(spi_done),
         .spi_cs_n(read_spi_cs_n)
     );
+    reg         read8_start;
+    reg  [7:0]  read8_addr;
+    wire [7:0]  read8_data;
+    wire        read8_busy;
+    wire        read8_done;
+    wire        read8_spi_start;
+    wire [7:0]  read8_spi_data_in;
+    wire        read8_spi_cs_n;
+
+    spi_read_reg_8 spi_read8_inst (
+        .clk(clk),
+        .rst_n(rst_n),
+        .start(read8_start),
+        .reg_addr(read8_addr),
+        .reg_data(read8_data),
+        .busy(read8_busy),
+        .done(read8_done),
+        .spi_start(read8_spi_start),
+        .spi_data_in(read8_spi_data_in),
+        .spi_data_out(spi_data_out),
+        .spi_busy(spi_busy),
+        .spi_done(spi_done),
+        .spi_cs_n(read8_spi_cs_n)
+    );
 
     // Muxing for spi_master inputs based on active sub-module
     // We assume write and read are never active simultaneously.
     wire active_write = write_busy || write_start;
     wire active_read  = read_busy || read_start;
+    wire active_read8 = read8_busy || read8_start;
 
-    assign spi_start   = active_write ? write_spi_start   : (active_read ? read_spi_start   : 0);
-    assign spi_data_in = active_write ? write_spi_data_in : (active_read ? read_spi_data_in : 8'h00);
-    assign spi_cs_n    = active_write ? write_spi_cs_n    : (active_read ? read_spi_cs_n    : 1'b1);
+    assign spi_start   = active_write ? write_spi_start   : (active_read ? read_spi_start   : (active_read8 ? read8_spi_start : 1'b0));
+    assign spi_data_in = active_write ? write_spi_data_in : (active_read ? read_spi_data_in : (active_read8 ? read8_spi_data_in : 8'h00));
+    assign spi_cs_n    = active_write ? write_spi_cs_n    : (active_read ? read_spi_cs_n    : (active_read8 ? read8_spi_cs_n : 1'b1));
 
     // Main MPU States
     localparam S_INIT          = 0;
@@ -136,11 +162,13 @@ module mpu_driver #(
     localparam S_WAKE_1        = 4;
     localparam S_WAKE_1_WAIT   = 5;
     localparam S_WAKE_DELAY    = 6;
-    localparam S_IDLE          = 7;
-    localparam S_READ_START    = 8;
-    localparam S_READ_WAIT     = 9;
-    localparam S_READ_DELAY    = 10;
-    localparam S_UPDATE        = 11;
+    localparam S_CHECK_WHOAMI  = 7;
+    localparam S_CHECK_WAIT    = 8;
+    localparam S_IDLE          = 9;
+    localparam S_READ_START    = 10;
+    localparam S_READ_WAIT     = 11;
+    localparam S_READ_DELAY    = 12;
+    localparam S_UPDATE        = 13;
 
     reg [3:0]  state;
     reg [2:0]  read_idx;
@@ -167,10 +195,13 @@ module mpu_driver #(
             write_data  <= 0;
             read_start  <= 0;
             read_addr   <= 0;
+            read8_start <= 0;
+            read8_addr  <= 0;
         end else begin
             valid <= 0;
             write_start <= 0;
             read_start <= 0;
+            read8_start <= 0;
 
             case (state)
                 S_INIT: begin
@@ -220,10 +251,27 @@ module mpu_driver #(
                 S_WAKE_DELAY: begin
                     // Wait 200ms
                     if (timer >= delay_200ms) begin
-                        state <= S_IDLE;
+                        state <= S_CHECK_WHOAMI;
                         timer <= 0;
                     end else begin
                         timer <= timer + 1;
+                    end
+                end
+
+                S_CHECK_WHOAMI: begin
+                    read8_addr  <= MPU_WHO_AM_I;
+                    read8_start <= 1;
+                    state       <= S_CHECK_WAIT;
+                end
+
+                S_CHECK_WAIT: begin
+                    if (read8_done) begin
+                        if (read8_data == 8'h70) begin
+                            state <= S_IDLE;
+                        end else begin
+                            // Loop back to init if WHO_AM_I fails
+                            state <= S_INIT;
+                        end
                     end
                 end
 
