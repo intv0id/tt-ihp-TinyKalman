@@ -1,6 +1,6 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
-VERILOG_SOURCES = $(PWD)/../src/mpu_driver.v $(PWD)/../src/spi_master.v
+VERILOG_SOURCES = $(PWD)/../src/mpu_driver.v $(PWD)/../src/spi_master.v $(PWD)/../src/spi_write_reg.v $(PWD)/../src/spi_read_reg_16.v
 TOPLEVEL = mpu_driver
 MODULE = test_mpu
 COMPILE_ARGS += -Pmpu_driver.INIT_WAIT_100MS=10 -Pmpu_driver.INIT_WAIT_200MS=20 -Pmpu_driver.TIMER_LIMIT=20
