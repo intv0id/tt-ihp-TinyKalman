@@ -88,15 +88,15 @@ async def test_mpu_init_and_read(dut):
         while dut.spi_sclk.value == 0:
             await RisingEdge(dut.clk)
 
-    # Wait for S_IDLE (state 9)
-    while dut.state.value != 9:
+    # Wait for S_IDLE (state 10)
+    while dut.state.value != 12:
         await RisingEdge(dut.clk)
 
     dut._log.info("Entered S_IDLE")
     assert dut.spi_cs_n.value == 1
 
-    # Wait for S_READ_START (state 10)
-    while dut.state.value != 10:
+    # Wait for S_READ_START (state 11)
+    while dut.state.value != 12:
         await RisingEdge(dut.clk)
 
     dut._log.info("Entered S_READ_START")
@@ -104,8 +104,8 @@ async def test_mpu_init_and_read(dut):
     for i in range(6):
         dut._log.info(f"Reading register pair {i}")
 
-        # Wait for S_READ_WAIT (state 11)
-        while dut.state.value != 11:
+        # Wait for S_READ_WAIT (state 12)
+        while dut.state.value != 12:
             await RisingEdge(dut.clk)
 
         # The submodule is now active, we need to inject MISO at the right time
@@ -117,7 +117,7 @@ async def test_mpu_init_and_read(dut):
 
         # Wait for it to finish the read
         # S_READ_WAIT goes back to S_READ_START or S_UPDATE
-        while dut.state.value == 11:
+        while dut.state.value == 12:
             await RisingEdge(dut.clk)
 
         assert dut.spi_cs_n.value == 1
