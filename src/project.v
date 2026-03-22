@@ -14,7 +14,7 @@ module tt_um_kalman #(
 );
 
     // SPI Pins
-    wire spi_miso = ui_in[0];
+    wire spi_miso = uio_in[0];
     wire spi_mosi;
     wire spi_sclk;
     wire spi_cs_n;
