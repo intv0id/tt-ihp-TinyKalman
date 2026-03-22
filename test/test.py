@@ -88,10 +88,9 @@ async def test_top_level(dut):
 
     # Set parameters based on detection
     # Fast: Wait ~20k cycles max. Baud Div = 5.
-    # Slow: Wait ~400k cycles max. Baud Div = 1042.
 
-    timeout = 300000 if fast_sim else 35000000
-    bit_period = 5 if fast_sim else 1042
+    timeout = 300000
+    bit_period = 5
 
     detected = False
     prev_val = 1
@@ -118,8 +117,6 @@ async def test_top_level(dut):
             break
         prev_val = uart_val
 
-        if i % 100000 == 0 and not fast_sim:
-            dut._log.info(f"Waiting... {i}")
 
     if not detected:
         dut._log.error("Timeout waiting for UART.")
@@ -144,10 +141,8 @@ async def test_top_level(dut):
 
     if byte_val != 0xDE:
         dut._log.error(f"Header Mismatch: Expected 0xDE, got {hex(byte_val)}")
-        # If mismatch in slow mode, maybe baud rate calculation is slightly off?
         # 10MHz / 9600 = 1041.666.
         # We use 1042.
-        # Error per bit = 0.33 cycles. 8 bits = 2.6 cycles. Negligible.
         assert False, "Header Mismatch"
     else:
         dut._log.info("Header 0xDE Verified!")
