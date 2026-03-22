@@ -4,16 +4,16 @@ from cocotb.triggers import ClockCycles, RisingEdge, Timer
 async def reset(dut):
     dut.rst_n.value = 0
     dut.clk.value = 0
-    await Timer(100, units="ns")
+    await Timer(100, unit="ns")
     dut.rst_n.value = 1
-    await Timer(100, units="ns")
+    await Timer(100, unit="ns")
 
 async def generate_clock(dut):
     while True:
         dut.clk.value = 0
-        await Timer(50, units="ns") # 10MHz
+        await Timer(50, unit="ns") # 10MHz
         dut.clk.value = 1
-        await Timer(50, units="ns")
+        await Timer(50, unit="ns")
 
 async def spi_miso_driver(dut):
     # This mock just blindly spits out 0x70 on every SPI transaction
@@ -40,9 +40,9 @@ async def spi_miso_driver(dut):
                 bit_idx = (bit_idx + 1) % 8
 
             # Send 0x70 constantly
-            dut.ui_in.value = bits[bit_idx]
+            dut.uio_in.value = bits[bit_idx]
         else:
-            dut.ui_in.value = 1
+            dut.uio_in.value = 1
             bit_idx = 0
 
         prev_sclk = sclk_val
