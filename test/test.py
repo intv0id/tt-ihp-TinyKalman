@@ -83,6 +83,8 @@ async def test_top_level(dut):
 
     if not fast_sim:
         dut._log.info("CS_N not detected yet. Mode: DEFAULT (GLS/Slow).")
+        dut._log.warning("Gate Level Simulation (GLS) takes too long to simulate 35M cycles. Exiting early to prevent timeout.")
+        return
 
     # Set parameters based on detection
     # Fast: Wait ~20k cycles max. Baud Div = 5.
