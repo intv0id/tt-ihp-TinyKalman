@@ -21,7 +21,6 @@ project:
     - "spi_master.v"
     - "mpu_driver.v"
     - "spi_write_reg.v"
-    - "spi_read_reg_8.v"
     - "spi_read_reg_16.v"
     - "cordic.v"
     - "kalman.v"

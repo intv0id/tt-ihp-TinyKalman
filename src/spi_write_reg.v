@@ -34,7 +34,7 @@ module spi_write_reg #(
     reg [1:0] state;
     reg [7:0] stored_data;
     reg [7:0] stored_addr;
-    reg [15:0] timer;
+    reg [9:0] timer;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin

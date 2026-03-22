@@ -18,7 +18,7 @@ module uart_tx #(
     localparam STOP  = 3;
 
     reg [1:0] state;
-    reg [15:0] clk_cnt; // 16-bit to be safe for low baud rates
+    reg [10:0] clk_cnt;
     reg [2:0] bit_cnt;
     reg [7:0] shift_reg;
 
