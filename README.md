@@ -46,7 +46,7 @@ The design uses a steady-state 1D Kalman Filter (mathematically equivalent to a 
 
 | Pin         | Function | Description                           |
 | ----------- | -------- | ------------------------------------- |
-| `ui_in[0]`  | **MISO** | SPI Master In Slave Out (from Sensor) |
+| `uio_in[0]`  | **MISO** | SPI Master In Slave Out (from Sensor) |
 | `uo_out[0]` | **MOSI** | SPI Master Out Slave In (to Sensor)   |
 | `uo_out[1]` | **SCLK** | SPI Clock                             |
 | `uo_out[2]` | **CS_N** | SPI Chip Select (Active Low)          |
@@ -77,7 +77,7 @@ The default configuration assumes a 10MHz system clock.
 
 **Wiring Instructions:**
 
-*   **FPGA Breakout `ui_in[0]` (MISO)** -> **MPU6500 ADO**
+*   **FPGA Breakout `uio_in[0]` (MISO)** -> **MPU6500 ADO**
 *   **FPGA Breakout `uo_out[0]` (MOSI)** -> **MPU6500 SDA**
 *   **FPGA Breakout `uo_out[1]` (SCLK)** -> **MPU6500 SCL**
 *   **FPGA Breakout `uo_out[2]` (CS_N)** -> **MPU6500 NCS**
@@ -115,20 +115,7 @@ The default configuration assumes a 10MHz system clock.
    tt.shuttle.tt_um_kalman.enable()
    ```
 
-## Live Plotting
-
-To plot the data live using Python from the FT232, you can use the provided `plot_serial.py` script.
-
-1.  Install the required dependencies:
-    ```bash
-    pip install pyserial matplotlib
-    ```
-2.  Run the script, specifying the correct serial port for your FT232 adapter:
-    ```bash
-    python3 plot_serial.py --port /dev/ttyUSB0
-    ```
-
-## Testing Locally
+### Testing Locally
 
 Tools used for testing locally:
 * Tiny Tapeout demoboard ETR
@@ -151,6 +138,19 @@ To test locally:
   ```bash
   python3 plot_serial.py --port /dev/tty.usbserial-[...]
   ```
+
+## Live Plotting
+
+To plot the data live using Python from the FT232, you can use the provided `plot_serial.py` script.
+
+1.  Install the required dependencies:
+    ```bash
+    pip install pyserial matplotlib
+    ```
+2.  Run the script, specifying the correct serial port for your FT232 adapter:
+    ```bash
+    python3 plot_serial.py --port /dev/ttyUSB0
+    ```
 
 ## Simulation
 
