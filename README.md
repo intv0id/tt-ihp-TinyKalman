@@ -128,6 +128,30 @@ To plot the data live using Python from the FT232, you can use the provided `plo
     python3 plot_serial.py --port /dev/ttyUSB0
     ```
 
+## Testing Locally
+
+Tools used for testing locally:
+* Tiny Tapeout demoboard ETR
+* FPGA ASIC simulator for TinyTapeout
+* FT232 serial bridge
+
+To test locally:
+
+* Harden the design for FPGA (TinyTapeout Demoboard ETR) on the docker image `hpretl/iic-osic-tools` and the TinyTapeout tools (https://github.com/TinyTapeout/tt-support-tools):
+  ```bash
+  $TINYTAPEOUT_TOOLS_DIR/tt_fpga.py --project-dir ./ harden
+  ```
+* Upload the binary using the computer locally using the TinyTapeout tools:
+  ```bash
+  cd repository
+  $TINYTAPEOUT_TOOLS_DIR/tt_fpga.py configure --port /dev/tty.usbmodem[...] --upload
+  ```
+* Update the TinyTapeout Demoboard ETR configuration to enable the design.
+* Open the visualization tool:
+  ```bash
+  python3 plot_serial.py --port /dev/tty.usbserial-[...]
+  ```
+
 ## Simulation
 
 To run the testbench (using Cocotb):
