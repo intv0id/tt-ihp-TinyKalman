@@ -87,7 +87,7 @@ The default configuration assumes a 10MHz system clock.
 
 **Running on the FPGA Breakout:**
 1. Download the `fpga_bitstream` artifact from the latest passing GitHub Action run.
-2. Extract the archive. You should find a `.bin` file inside (e.g., `tt_um_kalman.bin`).
+2. Extract the archive. You should find a `.bin` file inside (e.g., `tt_um_intv0id_kalman.bin`).
 3. Connect the TinyTapeout demoboard to your Mac.
 4. Clone the `tt-support-tools` repository:
    ```bash
@@ -96,7 +96,7 @@ The default configuration assumes a 10MHz system clock.
    ```
 5. Use the `tt_fpga.py` script to upload the bitstream. Ensure you specify the correct serial port for your Mac (typically `/dev/cu.usbmodem*`):
    ```bash
-   ./tt/tt_fpga.py configure --port /dev/cu.usbmodem<your_port_number> --upload --name path/to/extracted/tt_um_kalman.bin --set-default --clockrate 10000000
+   ./tt/tt_fpga.py configure --port /dev/cu.usbmodem<your_port_number> --upload --name path/to/extracted/tt_um_intv0id_kalman.bin --set-default --clockrate 10000000
    ```
 
 
@@ -112,7 +112,7 @@ The default configuration assumes a 10MHz system clock.
    ```
    ```python
    # Enable the project
-   tt.shuttle.tt_um_kalman.enable()
+   tt.shuttle.tt_um_intv0id_kalman.enable()
    ```
 
 ### Testing Locally
