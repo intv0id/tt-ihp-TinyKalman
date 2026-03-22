@@ -61,43 +61,12 @@ async def test_top_level(dut):
     await reset(dut)
     dut._log.info("Reset Released.")
 
-    # Detect Configuration via CS_N Latency
-    fast_sim = False
-    # Wait up to 5000 cycles for CS_N to go LOW after being HIGH
-    prev_cs = 1
-    for i in range(5000):
-        await RisingEdge(dut.clk)
-        val = dut.uo_out.value
-        if val.is_resolvable:
-            val_int = int(val)
-            cs = (val_int >> 2) & 1
-            if prev_cs == 1 and cs == 0:
-                if i > 50: # Ignore initial settling glitches in GLS
-                    fast_sim = True
-                    dut._log.info(f"CS_N detected falling edge at cycle {i}. Mode: FAST SIMULATION.")
-                    break
-            prev_cs = cs
-
-
-
-
-    if not fast_sim:
-        dut._log.info("CS_N not detected yet. Mode: DEFAULT (GLS/Slow).")
-
-    # Set parameters based on detection
-    # Fast: Wait ~20k cycles max. Baud Div = 5.
-    # Slow: Wait ~400k cycles max. Baud Div = 1042.
-
-    timeout = 300000 if fast_sim else 35000000
-    bit_period = 5 if fast_sim else 1042
+    # Always run in fast simulation mode
+    timeout = 300000
+    bit_period = 5
 
     detected = False
     prev_val = 1
-
-    # Continue waiting for UART (we might have already consumed 5000 cycles)
-    # The loop should continue from where we left off?
-    # Actually checking `i` in previous loop implies we consumed time.
-    # We can just start a new loop for the remaining time.
 
     dut._log.info(f"Waiting for UART Start Bit (Timeout: {timeout} cycles)...")
 
@@ -116,8 +85,7 @@ async def test_top_level(dut):
             break
         prev_val = uart_val
 
-        if i % 100000 == 0 and not fast_sim:
-            dut._log.info(f"Waiting... {i}")
+        # removed the slow logging (every 100k cycles)
 
     if not detected:
         dut._log.error("Timeout waiting for UART.")
@@ -142,10 +110,6 @@ async def test_top_level(dut):
 
     if byte_val != 0xDE:
         dut._log.error(f"Header Mismatch: Expected 0xDE, got {hex(byte_val)}")
-        # If mismatch in slow mode, maybe baud rate calculation is slightly off?
-        # 10MHz / 9600 = 1041.666.
-        # We use 1042.
-        # Error per bit = 0.33 cycles. 8 bits = 2.6 cycles. Negligible.
         assert False, "Header Mismatch"
     else:
         dut._log.info("Header 0xDE Verified!")
