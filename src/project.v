@@ -66,8 +66,8 @@ module tt_um_intv0id_kalman #(
 
     // CORDIC Shared Instance
     reg cordic_start;
-    wire signed [15:0] cordic_x = (state == S_CALC_ROLL) ? (accel_z >>> 1) : mag_yz;
-    wire signed [15:0] cordic_y = (state == S_CALC_ROLL) ? (accel_y >>> 1) : -accel_x_scaled;
+    wire signed [15:0] cordic_x = (state == S_CALC_ROLL || state == S_WAIT_ROLL) ? (accel_z >>> 1) : mag_yz;
+    wire signed [15:0] cordic_y = (state == S_CALC_ROLL || state == S_WAIT_ROLL) ? (accel_y >>> 1) : -accel_x_scaled;
     wire signed [15:0] cordic_angle, cordic_mag;
     wire cordic_done;
 
