@@ -72,10 +72,13 @@ async def test_top_level(dut):
             val_int = int(val)
             cs = (val_int >> 2) & 1
             if prev_cs == 1 and cs == 0:
-                fast_sim = True
-                dut._log.info(f"CS_N detected falling edge at cycle {i}. Mode: FAST SIMULATION.")
-                break
+                if i > 50: # Ignore initial settling glitches in GLS
+                    fast_sim = True
+                    dut._log.info(f"CS_N detected falling edge at cycle {i}. Mode: FAST SIMULATION.")
+                    break
             prev_cs = cs
+
+
 
 
     if not fast_sim:
