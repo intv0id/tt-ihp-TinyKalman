@@ -1,6 +1,10 @@
 {
   "recommendations": [
     "mshr-h.veriloghdl",
-    "surfer-project.surfer"
-  ]
+    "surfer-project.surfer",
+    "ms-python.python",
+    "visualstudioexptteam.vscodeintellicode",
+    "ms-python.vscode-pylance",
+    "paulober.pico-w-go"
+]
 }
