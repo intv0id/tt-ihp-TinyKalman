@@ -63,17 +63,20 @@ async def test_top_level(dut):
 
     # Detect Configuration via CS_N Latency
     fast_sim = False
-    # Wait up to 5000 cycles for CS_N
+    # Wait up to 5000 cycles for CS_N to go LOW after being HIGH
+    prev_cs = 1
     for i in range(5000):
         await RisingEdge(dut.clk)
         val = dut.uo_out.value
         if val.is_resolvable:
             val_int = int(val)
             cs = (val_int >> 2) & 1
-            if cs == 0:
+            if prev_cs == 1 and cs == 0:
                 fast_sim = True
-                dut._log.info(f"CS_N detected at cycle {i}. Mode: FAST SIMULATION.")
+                dut._log.info(f"CS_N detected falling edge at cycle {i}. Mode: FAST SIMULATION.")
                 break
+            prev_cs = cs
+
 
     if not fast_sim:
         dut._log.info("CS_N not detected yet. Mode: DEFAULT (GLS/Slow).")
