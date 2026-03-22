@@ -39,7 +39,7 @@ module spi_read_reg_16 #(
 
     reg [2:0] state;
     reg [7:0] temp_h;
-    reg [15:0] timer;
+    reg [9:0] timer;
     reg [7:0] stored_addr;
 
     always @(posedge clk or negedge rst_n) begin

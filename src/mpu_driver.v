@@ -31,7 +31,6 @@ module mpu_driver #(
     output reg  signed [15:0] accel_z,
     output reg  signed [15:0] gyro_x,
     output reg  signed [15:0] gyro_y,
-    output reg  signed [15:0] gyro_z,
     output reg         valid
 );
 
@@ -40,13 +39,12 @@ module mpu_driver #(
     localparam MPU_WHO_AM_I     = 8'h75;
 
     // Register Addresses for reading
-    wire [7:0] REG_ADDRS [0:5];
+    wire [7:0] REG_ADDRS [0:4];
     assign REG_ADDRS[0] = 8'h3B; // ACCEL_XOUT_H
     assign REG_ADDRS[1] = 8'h3D; // ACCEL_YOUT_H
     assign REG_ADDRS[2] = 8'h3F; // ACCEL_ZOUT_H
     assign REG_ADDRS[3] = 8'h43; // GYRO_XOUT_H
     assign REG_ADDRS[4] = 8'h45; // GYRO_YOUT_H
-    assign REG_ADDRS[5] = 8'h47; // GYRO_ZOUT_H
 
     // SPI Master Instance
     wire       spi_start;
@@ -119,40 +117,16 @@ module mpu_driver #(
         .spi_done(spi_done),
         .spi_cs_n(read_spi_cs_n)
     );
-    reg         read8_start;
-    reg  [7:0]  read8_addr;
-    wire [7:0]  read8_data;
-    wire        read8_busy;
-    wire        read8_done;
-    wire        read8_spi_start;
-    wire [7:0]  read8_spi_data_in;
-    wire        read8_spi_cs_n;
 
-    spi_read_reg_8 spi_read8_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .start(read8_start),
-        .reg_addr(read8_addr),
-        .reg_data(read8_data),
-        .busy(read8_busy),
-        .done(read8_done),
-        .spi_start(read8_spi_start),
-        .spi_data_in(read8_spi_data_in),
-        .spi_data_out(spi_data_out),
-        .spi_busy(spi_busy),
-        .spi_done(spi_done),
-        .spi_cs_n(read8_spi_cs_n)
-    );
 
     // Muxing for spi_master inputs based on active sub-module
     // We assume write and read are never active simultaneously.
     wire active_write = write_busy || write_start;
     wire active_read  = read_busy || read_start;
-    wire active_read8 = read8_busy || read8_start;
 
-    assign spi_start   = active_write ? write_spi_start   : (active_read ? read_spi_start   : (active_read8 ? read8_spi_start : 1'b0));
-    assign spi_data_in = active_write ? write_spi_data_in : (active_read ? read_spi_data_in : (active_read8 ? read8_spi_data_in : 8'h00));
-    assign spi_cs_n    = active_write ? write_spi_cs_n    : (active_read ? read_spi_cs_n    : (active_read8 ? read8_spi_cs_n : 1'b1));
+    assign spi_start   = active_write ? write_spi_start   : (active_read ? read_spi_start   : 1'b0);
+    assign spi_data_in = active_write ? write_spi_data_in : (active_read ? read_spi_data_in : 8'h00);
+    assign spi_cs_n    = active_write ? write_spi_cs_n    : (active_read ? read_spi_cs_n    : 1'b1);
 
     // Main MPU States
     localparam S_INIT          = 0;
@@ -173,11 +147,11 @@ module mpu_driver #(
 
     reg [3:0]  state;
     reg [2:0]  read_idx;
-    reg [31:0] timer;
+    reg [20:0] timer;
 
-    wire [31:0] delay_100ms = INIT_WAIT_100MS;
-    wire [31:0] delay_200ms = INIT_WAIT_200MS;
-    wire [31:0] delay_between_reads = 20;
+    wire [20:0] delay_100ms = INIT_WAIT_100MS;
+    wire [20:0] delay_200ms = INIT_WAIT_200MS;
+    wire [20:0] delay_between_reads = 20;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -190,19 +164,15 @@ module mpu_driver #(
             accel_z     <= 0;
             gyro_x      <= 0;
             gyro_y      <= 0;
-            gyro_z      <= 0;
             write_start <= 0;
             write_addr  <= 0;
             write_data  <= 0;
             read_start  <= 0;
             read_addr   <= 0;
-            read8_start <= 0;
-            read8_addr  <= 0;
         end else begin
             valid <= 0;
             write_start <= 0;
             read_start <= 0;
-            read8_start <= 0;
 
             case (state)
                 S_INIT: begin
@@ -260,14 +230,14 @@ module mpu_driver #(
                 end
 
                 S_CHECK_WHOAMI: begin
-                    read8_addr  <= MPU_WHO_AM_I;
-                    read8_start <= 1;
+                    read_addr  <= MPU_WHO_AM_I;
+                    read_start <= 1;
                     state       <= S_CHECK_WAIT;
                 end
 
                 S_CHECK_WAIT: begin
-                    if (read8_done) begin
-                        if (read8_data == 8'h70) begin
+                    if (read_done) begin
+                        if (read_data[15:8] == 8'h70) begin
                             state <= S_IDLE;
                         end else begin
                             // Loop back to init if WHO_AM_I fails, but wait first
@@ -309,10 +279,9 @@ module mpu_driver #(
                             2: accel_z <= read_data;
                             3: gyro_x  <= read_data;
                             4: gyro_y  <= read_data;
-                            5: gyro_z  <= read_data;
                         endcase
 
-                        if (read_idx == 5) begin
+                        if (read_idx == 4) begin
                             state <= S_UPDATE;
                         end else begin
                             read_idx <= read_idx + 1;

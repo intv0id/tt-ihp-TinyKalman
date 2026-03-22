@@ -61,13 +61,13 @@ module tt_um_kalman #(
         .accel_z(accel_z),
         .gyro_x(gyro_x),
         .gyro_y(gyro_y),
-        .gyro_z(),
         .valid(mpu_valid)
     );
 
     // CORDIC Shared Instance
     reg cordic_start;
-    reg signed [15:0] cordic_x, cordic_y;
+    wire signed [15:0] cordic_x = (state == S_CALC_ROLL) ? (accel_z >>> 1) : mag_yz;
+    wire signed [15:0] cordic_y = (state == S_CALC_ROLL) ? (accel_y >>> 1) : -accel_x_scaled;
     wire signed [15:0] cordic_angle, cordic_mag;
     wire cordic_done;
 
@@ -89,7 +89,8 @@ module tt_um_kalman #(
 
     // Kalman Instances
     reg kalman_en;
-    reg signed [15:0] kalman_rate_roll, kalman_angle_m_roll;
+    wire signed [15:0] kalman_rate_roll = gyro_x;
+    wire signed [15:0] kalman_angle_m_roll = roll_m;
     wire signed [15:0] roll_est;
 
     kalman kalman_roll (
@@ -101,7 +102,8 @@ module tt_um_kalman #(
         .angle_out(roll_est)
     );
 
-    reg signed [15:0] kalman_rate_pitch, kalman_angle_m_pitch;
+    wire signed [15:0] kalman_rate_pitch = gyro_y;
+    wire signed [15:0] kalman_angle_m_pitch = pitch_m;
     wire signed [15:0] pitch_est;
 
     kalman kalman_pitch (
@@ -133,7 +135,14 @@ module tt_um_kalman #(
     wire signed [15:0] accel_x_scaled = (accel_x >>> 1) + (accel_x >>> 2) + (accel_x >>> 4);
 
     // UART Signals
-    reg [7:0] uart_data;
+
+    wire [7:0] uart_data;
+    assign uart_data = (uart_cnt == 0) ? 8'hDE :
+                       (uart_cnt == 1) ? 8'hAD :
+                       (uart_cnt == 2) ? roll_est[15:8] :
+                       (uart_cnt == 3) ? roll_est[7:0] :
+                       (uart_cnt == 4) ? pitch_est[15:8] :
+                       pitch_est[7:0];
     reg uart_start;
     wire uart_busy, uart_done;
     reg [3:0] uart_cnt;
@@ -166,14 +175,7 @@ module tt_um_kalman #(
             roll_m <= 0;
             mag_yz <= 0;
             pitch_m <= 0;
-            cordic_x <= 0;
-            cordic_y <= 0;
-            kalman_rate_roll <= 0;
-            kalman_angle_m_roll <= 0;
-            kalman_rate_pitch <= 0;
-            kalman_angle_m_pitch <= 0;
             uart_cnt <= 0;
-            uart_data <= 0;
         end else begin
             cordic_start <= 0;
             kalman_en <= 0;
@@ -189,8 +191,6 @@ module tt_um_kalman #(
                 S_CALC_ROLL: begin
                     // Roll = atan2(accel_y, accel_z)
                     // Inputs scaled by 1/2 to avoid overflow
-                    cordic_x <= accel_z >>> 1;
-                    cordic_y <= accel_y >>> 1;
                     cordic_start <= 1;
                     state <= S_WAIT_ROLL;
                 end
@@ -207,8 +207,6 @@ module tt_um_kalman #(
                     // Pitch = atan2(-accel_x, sqrt(y^2+z^2))
                     // Input x: mag_yz (Scale K/2)
                     // Input y: -accel_x scaled by K/2
-                    cordic_x <= mag_yz;
-                    cordic_y <= -accel_x_scaled;
                     cordic_start <= 1;
                     state <= S_WAIT_PITCH;
                 end
@@ -222,11 +220,7 @@ module tt_um_kalman #(
 
                 S_UPDATE_K: begin
                     // Update Kalman Filters
-                    kalman_rate_roll <= gyro_x;
-                    kalman_angle_m_roll <= roll_m;
 
-                    kalman_rate_pitch <= gyro_y;
-                    kalman_angle_m_pitch <= pitch_m;
 
                     kalman_en <= 1;
                     uart_cnt <= 0;
@@ -236,14 +230,7 @@ module tt_um_kalman #(
                 S_SEND_UART: begin
                     if (!uart_busy && !uart_start) begin
                         uart_start <= 1;
-                        case (uart_cnt)
-                            0: uart_data <= 8'hDE; // Header
-                            1: uart_data <= 8'hAD;
-                            2: uart_data <= roll_est[15:8];
-                            3: uart_data <= roll_est[7:0];
-                            4: uart_data <= pitch_est[15:8];
-                            5: uart_data <= pitch_est[7:0];
-                        endcase
+
                         state <= S_WAIT_UART;
                     end else if (uart_start) begin
                         uart_start <= 0; // Clear start
