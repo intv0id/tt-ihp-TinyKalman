@@ -27,14 +27,13 @@ async def spi_miso_driver(dut):
 
     while True:
         await RisingEdge(dut.clk)
-        val = dut.uo_out.value
-        if not val.is_resolvable:
-            cs_val = 1
-            sclk_val = 1
-        else:
-            val_int = int(val)
+        try:
+            val_int = int(dut.uo_out.value)
             cs_val = (val_int >> 2) & 1
             sclk_val = (val_int >> 1) & 1
+        except ValueError:
+            cs_val = 1
+            sclk_val = 1
 
         if cs_val == 0:
             if prev_sclk == 1 and sclk_val == 0:
@@ -66,14 +65,15 @@ async def test_top_level(dut):
     # Wait up to 5000 cycles for CS_N
     for i in range(5000):
         await RisingEdge(dut.clk)
-        val = dut.uo_out.value
-        if val.is_resolvable:
-            val_int = int(val)
-            cs = (val_int >> 2) & 1
+        try:
+            val = int(dut.uo_out.value)
+            cs = (val >> 2) & 1
             if cs == 0:
                 fast_sim = True
                 dut._log.info(f"CS_N detected at cycle {i}. Mode: FAST SIMULATION.")
                 break
+        except ValueError:
+            pass
 
     if not fast_sim:
         dut._log.info("CS_N not detected yet. Mode: DEFAULT (GLS/Slow).")
@@ -82,7 +82,7 @@ async def test_top_level(dut):
     # Fast: Wait ~20k cycles max. Baud Div = 5.
     # Slow: Wait ~400k cycles max. Baud Div = 1042.
 
-    timeout = 300000 if fast_sim else 35000000
+    timeout = 300000 if fast_sim else 1000000
     bit_period = 5 if fast_sim else 1042
 
     detected = False
@@ -97,12 +97,11 @@ async def test_top_level(dut):
 
     for i in range(timeout):
         await RisingEdge(dut.clk)
-        val = dut.uo_out.value
-        if not val.is_resolvable:
-            uart_val = 1
-        else:
-            val_int = int(val)
+        try:
+            val_int = int(dut.uo_out.value)
             uart_val = (val_int >> 3) & 1 # Bit 3
+        except ValueError:
+            uart_val = 1
 
         if prev_val == 1 and uart_val == 0:
             dut._log.info(f"UART Start Bit Detected at cycle {i}!")
@@ -124,12 +123,11 @@ async def test_top_level(dut):
     byte_val = 0
     for bit_idx in range(8):
         await ClockCycles(dut.clk, bit_period)
-        val = dut.uo_out.value
-        if not val.is_resolvable:
-            bit = 0
-        else:
-            val_int = int(val)
+        try:
+            val_int = int(dut.uo_out.value)
             bit = (val_int >> 3) & 1
+        except ValueError:
+            bit = 0
         if bit == 1: byte_val |= (1 << bit_idx)
 
     dut._log.info(f"Received: {hex(byte_val)}")
@@ -153,12 +151,11 @@ async def test_top_level(dut):
     prev_val = 1
     for i in range(bit_period * 2):
         await RisingEdge(dut.clk)
-        val = dut.uo_out.value
-        if not val.is_resolvable:
+        try:
+            val = int(dut.uo_out.value)
+            bit = (val >> 3) & 1
+        except ValueError:
             bit = 1
-        else:
-            val_int = int(val)
-            bit = (val_int >> 3) & 1
 
         if prev_val == 1 and bit == 0:
             next_start = True
@@ -175,12 +172,11 @@ async def test_top_level(dut):
     byte_val = 0
     for bit_idx in range(8):
         await ClockCycles(dut.clk, bit_period)
-        val = dut.uo_out.value
-        if not val.is_resolvable:
-            bit = 0
-        else:
-            val_int = int(val)
+        try:
+            val_int = int(dut.uo_out.value)
             bit = (val_int >> 3) & 1
+        except ValueError:
+            bit = 0
         if bit == 1: byte_val |= (1 << bit_idx)
 
     dut._log.info(f"Received: {hex(byte_val)}")
