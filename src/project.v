@@ -1,6 +1,6 @@
 `default_nettype none
 
-module tt_um_kalman #(
+module tt_um_intv0id_kalman #(
     parameter CLK_FREQ = 10000000 // Default 10MHz
 )(
     input  wire [7:0] ui_in,    // Dedicated inputs
