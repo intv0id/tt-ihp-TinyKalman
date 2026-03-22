@@ -63,9 +63,9 @@ async def test_top_level(dut):
 
     # Detect Configuration via CS_N Latency
     fast_sim = False
-    # Wait up to 5000 cycles for CS_N to go LOW after being HIGH
+    # Wait up to 150 cycles for CS_N to go LOW after being HIGH
     prev_cs = 1
-    for i in range(5000):
+    for i in range(150):
         await RisingEdge(dut.clk)
         val = dut.uo_out.value
         if val.is_resolvable:
